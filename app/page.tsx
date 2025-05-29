@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { PawPrint, Shield, Heart, ArrowRight } from "lucide-react"
 import PlaceholderImage from "@/components/placeholder-image"
+import HelpFloatingButton from "@/components/help-floating-button"
 
 export default function Home() {
   return (
@@ -166,6 +167,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Botão de ajuda flutuante */}
+      <HelpFloatingButton />
     </div>
   )
 }
