@@ -1,53 +1,66 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Heart, MapPin, Calendar, Info, PawPrint } from "lucide-react"
-import Image from "next/image"
-import AdotarForm from "./adotar-form"
-import PlaceholderImage from "@/components/placeholder-image"
-
-// Simulação de dados de um pet específico
-const pet = {
-  id: 1,
-  name: "Max",
-  age: "2 anos",
-  breed: "Vira-lata",
-  city: "São Paulo, SP",
-  image: "/placeholder.svg?height=500&width=500",
-  type: "dog",
-  description:
-    "Max é um cachorro muito dócil e brincalhão. Foi resgatado das ruas e está procurando um lar amoroso. Ele é muito sociável com outros animais e crianças.",
-  gender: "Macho",
-  size: "Médio",
-  vaccinated: true,
-  neutered: true,
-  requirements: [
-    "Ter espaço adequado para o animal",
-    "Tela nas janelas para segurança",
-    "Comprometer-se com a saúde e bem-estar do animal",
-    "Passar por entrevista e visita prévia",
-  ],
-  organization: {
-    name: "Amigos dos Animais",
-    phone: "(11) 99999-9999",
-    email: "contato@amigosanimais.org",
-  },
-}
+"use client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Heart, MapPin, Calendar, Info, PawPrint } from "lucide-react";
+import Image from "next/image";
+import AdotarForm from "./adotar-form";
+import PlaceholderImage from "@/components/placeholder-image";
+import { useState, useEffect, use } from "react";
+import { getAnimalById } from "@/services/animalService";
+import { Animal, Gender, Size } from "@/interfaces/animalInterface";
+import { getUserById } from "@/services/userService";
+import { User } from "@/interfaces/userInterface";
+import { calcularIdade } from "@/utils/dateUtils";
 
 export default function PetDetailsPage({ params }: { params: { id: string } }) {
+  const [pet, setPet] = useState<Animal | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [creator, setCreator] = useState<User | null>(null);
+  const fetchPetDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await getAnimalById(params.id);
+      setPet(response);
+      if (response.createdByUserId) {
+        const user = await getUserById(response.createdByUserId);
+        setCreator(user);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar detalhes do pet:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchPetDetails();
+  }, [params.id]);
+
+  if (loading) return <p>Carregando...</p>;
+  if (!pet) return <p>Pet não encontrado.</p>;
+
   return (
     <div className="container mx-auto py-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Imagem do pet */}
         <div className="relative rounded-lg overflow-hidden h-[400px] lg:h-[500px]">
-          {pet.image ? (
-            <Image src={pet.image || "/placeholder.svg"} alt={pet.name} fill className="object-cover" priority />
+          {pet.imageUrl ? (
+            <Image
+              src={pet.imageUrl}
+              alt={pet.name}
+              fill
+              className="object-cover"
+              priority
+            />
           ) : (
-            <PlaceholderImage width={500} height={500} alt={pet.name} className="w-full h-full" />
+            <PlaceholderImage
+              width={500}
+              height={500}
+              alt={pet.name}
+              className="w-full h-full"
+            />
           )}
         </div>
 
-        {/* Informações do pet */}
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold">{pet.name}</h1>
@@ -69,23 +82,25 @@ export default function PetDetailsPage({ params }: { params: { id: string } }) {
             <Card>
               <CardContent className="p-4 flex flex-col items-center justify-center">
                 <Calendar className="h-5 w-5 text-pink-500 mb-1" />
-                <span className="text-sm font-medium">{pet.age}</span>
+                <span className="text-sm font-medium">
+                  {calcularIdade(pet.birthDate)}
+                </span>
                 <span className="text-xs text-gray-500">Idade</span>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="p-4 flex flex-col items-center justify-center">
                 <Info className="h-5 w-5 text-pink-500 mb-1" />
-                <span className="text-sm font-medium">{pet.gender}</span>
+                <span className="text-sm font-medium">
+                  {Gender[pet.gender]}
+                </span>
                 <span className="text-xs text-gray-500">Sexo</span>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="p-4 flex flex-col items-center justify-center">
                 <Heart className="h-5 w-5 text-pink-500 mb-1" />
-                <span className="text-sm font-medium">{pet.size}</span>
+                <span className="text-sm font-medium">{Size[pet.size]}</span>
                 <span className="text-xs text-gray-500">Porte</span>
               </CardContent>
             </Card>
@@ -103,37 +118,46 @@ export default function PetDetailsPage({ params }: { params: { id: string } }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-2 ${pet.vaccinated ? "bg-green-500" : "bg-red-500"}`}></div>
-                  <span>{pet.vaccinated ? "Vacinado" : "Não vacinado"}</span>
+                  <div
+                    className={`w-3 h-3 rounded-full mr-2 ${
+                      pet.isVaccinated ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  ></div>
+                  <span>{pet.isVaccinated ? "Vacinado" : "Não vacinado"}</span>
                 </div>
 
                 <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-2 ${pet.neutered ? "bg-green-500" : "bg-red-500"}`}></div>
-                  <span>{pet.neutered ? "Castrado" : "Não castrado"}</span>
+                  <div
+                    className={`w-3 h-3 rounded-full mr-2 ${
+                      pet.isNeutered ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  ></div>
+                  <span>{pet.isNeutered ? "Castrado" : "Não castrado"}</span>
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="requirements" className="mt-4">
-              <ul className="list-disc pl-5 space-y-2">
-                {pet.requirements.map((req, index) => (
-                  <li key={index}>{req}</li>
-                ))}
-              </ul>
+              <p>{pet.adoptionRequirements || "Nenhum requisito informado."}</p>
             </TabsContent>
 
             <TabsContent value="contact" className="mt-4">
-              <div className="space-y-2">
-                <p>
-                  <strong>Organização:</strong> {pet.organization.name}
-                </p>
-                <p>
-                  <strong>Telefone:</strong> {pet.organization.phone}
-                </p>
-                <p>
-                  <strong>Email:</strong> {pet.organization.email}
-                </p>
-              </div>
+              {creator ? (
+                <div className="space-y-2">
+                  <p>
+                    <strong>Responsável:</strong> {creator.name}
+                  </p>
+                  <p>
+                    <strong>Telefone:</strong>{" "}
+                    {creator.phone || "Não informado"}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {creator.email}
+                  </p>
+                </div>
+              ) : (
+                <p>Informações de contato indisponíveis.</p>
+              )}
             </TabsContent>
           </Tabs>
 
@@ -143,7 +167,6 @@ export default function PetDetailsPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* Formulário de adoção */}
       <div className="mt-12">
         <h2 className="text-2xl font-bold mb-6">Formulário de Pré-adoção</h2>
         <Card>
@@ -153,5 +176,5 @@ export default function PetDetailsPage({ params }: { params: { id: string } }) {
         </Card>
       </div>
     </div>
-  )
+  );
 }

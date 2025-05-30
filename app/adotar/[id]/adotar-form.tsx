@@ -1,16 +1,25 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useState } from "react"
-import { toast } from "@/components/ui/use-toast"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState } from "react";
+import { toast } from "@/components/ui/use-toast";
+import { AdoptionRequest, createAdoption } from "@/services/adoptionService";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -42,12 +51,20 @@ const formSchema = z.object({
     message: "Por favor, conte-nos mais sobre sua motivação para adotar.",
   }),
   termsAccepted: z.literal(true, {
-    errorMap: () => ({ message: "Você deve aceitar os termos para continuar." }),
+    errorMap: () => ({
+      message: "Você deve aceitar os termos para continuar.",
+    }),
   }),
-})
+});
 
-export default function AdotarForm({ petId, petName }: { petId: string; petName: string }) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export default function AdotarForm({
+  petId,
+  petName,
+}: {
+  petId: string;
+  petName: string;
+}) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,27 +73,52 @@ export default function AdotarForm({ petId, petName }: { petId: string; petName:
       email: "",
       phone: "",
       address: "",
+      hasOtherPets: "nao",
       otherPetsDetails: "",
+      houseType: "casa",
       familySize: "",
       workHours: "",
       motivation: "",
-      termsAccepted: false,
+      termsAccepted: true,
     },
-  })
+  });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
-    // Simulação de envio para API
-    setTimeout(() => {
-      console.log(values)
-      setIsSubmitting(false)
-      toast({
-        title: "Formulário enviado com sucesso!",
-        description: `Recebemos seu interesse em adotar ${petName}. Entraremos em contato em breve.`,
+    const adoptionData: AdoptionRequest = {
+      animalId: petId,
+      fullName: values.name,
+      email: values.email,
+      phone: values.phone,
+      address: values.address,
+      hasOtherPets: values.hasOtherPets === "sim", // converte string para boolean
+      housingType: values.houseType, // já deve ser um dos valores válidos
+      numberOfResidents: Number(values.familySize), // converte string para number
+      workSchedule: values.workHours,
+      reasonForAdoption: values.motivation,
+      agreedToTerms: values.termsAccepted,
+    };
+
+    createAdoption(adoptionData)
+      .then(() => {
+        toast({
+          title: "Formulário enviado com sucesso!",
+          description: `Recebemos seu interesse em adotar ${petName}. Entraremos em contato em breve.`,
+        });
+        form.reset();
       })
-      form.reset()
-    }, 1500)
+      .catch((error) => {
+        toast({
+          title: "Erro ao enviar o formulário.",
+          description:
+            error?.response?.data?.message || "Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   }
 
   return (
@@ -149,7 +191,7 @@ export default function AdotarForm({ petId, petName }: { petId: string; petName:
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex flex-col space-y-1"
                 >
                   <FormItem className="flex items-center space-x-3 space-y-0">
@@ -200,7 +242,7 @@ export default function AdotarForm({ petId, petName }: { petId: string; petName:
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex flex-col space-y-1"
                 >
                   <FormItem className="flex items-center space-x-3 space-y-0">
@@ -282,13 +324,19 @@ export default function AdotarForm({ petId, petName }: { petId: string; petName:
           render={({ field }) => (
             <FormItem className="flex flex-row items-start space-x-3 space-y-0">
               <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Concordo com os termos de adoção responsável</FormLabel>
+                <FormLabel>
+                  Concordo com os termos de adoção responsável
+                </FormLabel>
                 <FormDescription>
-                  Ao marcar esta caixa, você concorda em fornecer um lar amoroso e responsável para o animal, seguindo
-                  todas as diretrizes de adoção.
+                  Ao marcar esta caixa, você concorda em fornecer um lar amoroso
+                  e responsável para o animal, seguindo todas as diretrizes de
+                  adoção.
                 </FormDescription>
               </div>
               <FormMessage />
@@ -301,5 +349,5 @@ export default function AdotarForm({ petId, petName }: { petId: string; petName:
         </Button>
       </form>
     </Form>
-  )
+  );
 }
