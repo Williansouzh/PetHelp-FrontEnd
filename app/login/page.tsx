@@ -1,16 +1,31 @@
-"use client"
-
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useState } from "react"
-import { toast } from "@/components/ui/use-toast"
-import { PawPrint } from "lucide-react"
-import Link from "next/link"
+"use client";
+import { login } from "@/services/authService";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useState } from "react";
+import { toast } from "@/components/ui/use-toast";
+import { PawPrint } from "lucide-react";
+import Link from "next/link";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -19,31 +34,43 @@ const formSchema = z.object({
   password: z.string().min(6, {
     message: "A senha deve ter pelo menos 6 caracteres.",
   }),
-})
+});
 
 export default function LoginPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
       password: "",
     },
-  })
+  });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true)
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
 
-    // Simulação de envio para API
-    setTimeout(() => {
-      console.log(values)
-      setIsSubmitting(false)
+    try {
+      const data = await login(values.email, values.password);
+      const token = data.accessToken;
+      if (token) {
+        localStorage.setItem("token", token);
+      } // 🔐 salva o token
       toast({
         title: "Login realizado com sucesso!",
         description: "Você será redirecionado para o dashboard.",
-      })
-    }, 1500)
+      });
+      router.push("/ongs/dashboard");
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        title: "Erro ao fazer login",
+        description: error.response?.data?.message || "Credenciais inválidas.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -56,14 +83,19 @@ export default function LoginPage() {
                 <PawPrint className="h-8 w-8 text-pink-600" />
               </div>
             </div>
-            <CardTitle className="text-2xl text-center">Bem-vindo de volta</CardTitle>
+            <CardTitle className="text-2xl text-center">
+              Bem-vindo de volta
+            </CardTitle>
             <CardDescription className="text-center">
               Entre com seu email e senha para acessar sua conta
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 <FormField
                   control={form.control}
                   name="email"
@@ -85,21 +117,32 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="******" {...field} />
+                        <Input
+                          type="password"
+                          placeholder="******"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
             </Form>
 
             <div className="mt-4 text-center text-sm">
-              <Link href="/esqueci-senha" className="text-pink-600 hover:underline">
+              <Link
+                href="/esqueci-senha"
+                className="text-pink-600 hover:underline"
+              >
                 Esqueceu sua senha?
               </Link>
             </div>
@@ -117,7 +160,10 @@ export default function LoginPage() {
                 Termos de Uso
               </Link>{" "}
               e{" "}
-              <Link href="/privacidade" className="text-pink-600 hover:underline">
+              <Link
+                href="/privacidade"
+                className="text-pink-600 hover:underline"
+              >
                 Política de Privacidade
               </Link>
             </div>
@@ -125,5 +171,5 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
