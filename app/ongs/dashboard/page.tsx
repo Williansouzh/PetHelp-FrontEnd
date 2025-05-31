@@ -1,11 +1,5 @@
 "use client";
-import {
-  getDashboardStats,
-  getRecentPets,
-  fetchPets,
-  fetchAdoptionRequests,
-} from "@/services/dashboardService";
-import { useEffect } from "react";
+import { Stats } from "@/interfaces/dashboardInterface";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -46,39 +40,125 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import PlaceholderImage from "@/components/placeholder-image";
+import { getDashboardStats } from "@/services/dashboardService";
 
-type Stat = {
-  title: string;
-  value: number;
-  icon: React.ElementType;
-  color: string;
+const pets = [
+  {
+    id: 1,
+    name: "Max",
+    age: "2 anos",
+    breed: "Vira-lata",
+    status: "disponível",
+    image: "/placeholder.svg?height=100&width=100",
+    type: "dog",
+    createdAt: "2023-05-15",
+  },
+  {
+    id: 2,
+    name: "Luna",
+    age: "1 ano",
+    breed: "Siamês",
+    status: "adotado",
+    image: "/placeholder.svg?height=100&width=100",
+    type: "cat",
+    createdAt: "2023-06-20",
+  },
+  {
+    id: 3,
+    name: "Thor",
+    age: "3 anos",
+    breed: "Golden Retriever",
+    status: "em processo",
+    image: "/placeholder.svg?height=100&width=100",
+    type: "dog",
+    createdAt: "2023-07-10",
+  },
+  {
+    id: 4,
+    name: "Nina",
+    age: "6 meses",
+    breed: "Persa",
+    status: "disponível",
+    image: "/placeholder.svg?height=100&width=100",
+    type: "cat",
+    createdAt: "2023-08-05",
+  },
+];
+
+// Dados simulados de solicitações de adoção
+const adoptionRequests = [
+  {
+    id: 1,
+    petName: "Max",
+    petId: 1,
+    requesterName: "João Silva",
+    requesterEmail: "joao@example.com",
+    status: "pendente",
+    createdAt: "2023-08-10",
+  },
+  {
+    id: 2,
+    petName: "Luna",
+    petId: 2,
+    requesterName: "Maria Oliveira",
+    requesterEmail: "maria@example.com",
+    status: "aprovado",
+    createdAt: "2023-07-25",
+  },
+  {
+    id: 3,
+    petName: "Thor",
+    petId: 3,
+    requesterName: "Pedro Santos",
+    requesterEmail: "pedro@example.com",
+    status: "em análise",
+    createdAt: "2023-08-15",
+  },
+];
+
+// Dados simulados de estatísticas
+const buildStats = (stats: Stats | undefined) => {
+  if (!stats) return [];
+
+  return [
+    {
+      title: "Total de Pets",
+      value: stats.totalPets,
+      icon: PawPrint,
+      color: "text-blue-500",
+    },
+    {
+      title: "Adotados",
+      value: stats.adoptedPets,
+      icon: CheckCircle2,
+      color: "text-green-500",
+    },
+    {
+      title: "Disponíveis",
+      value: stats.availablePets,
+      icon: Eye,
+      color: "text-pink-500",
+    },
+    {
+      title: "Solicitações Pendentes",
+      value: stats.pendingRequests,
+      icon: AlertTriangle,
+      color: "text-yellow-500",
+    },
+  ];
 };
 
 export default function OngDashboardPage() {
   const [selectedTab, setSelectedTab] = useState("overview");
-  const [stats, setStats] = useState<Stat[]>([]);
-  const [pets, setPets] = useState<any[]>([]);
-  const [adoptionRequests, setAdoptionRequests] = useState<any[]>([]);
-
+  const [petsData, setPetsData] = useState(pets);
+  const [dashboardStats, setDashboardStats] = useState<Stats>();
   useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        const [statsData, recentPetsData, allRequests] = await Promise.all([
-          getDashboardStats(),
-          getRecentPets(),
-          fetchAdoptionRequests(),
-        ]);
-        setStats(statsData);
-        setPets(recentPetsData);
-        setAdoptionRequests(allRequests);
-      } catch (error) {
-        console.error("Erro ao carregar dados do dashboard:", error);
-      }
-    }
-
-    loadDashboardData();
+    const fetchStats = async () => {
+      const stats = await getDashboardStats();
+      setDashboardStats(stats);
+    };
+    fetchStats();
   }, []);
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "disponível":
@@ -139,9 +219,6 @@ export default function OngDashboardPage() {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
-  if (!stats.length || !pets.length || !adoptionRequests.length) {
-    return <div>Carregando...</div>;
-  }
 
   return (
     <div className="container py-8">
@@ -175,7 +252,7 @@ export default function OngDashboardPage() {
         <TabsContent value="overview" className="space-y-6">
           {/* Estatísticas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map((stat, index) => (
+            {buildStats(dashboardStats).map((stat, index) => (
               <Card key={index}>
                 <CardContent className="p-6 flex items-center justify-between">
                   <div>

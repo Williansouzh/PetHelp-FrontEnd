@@ -1,6 +1,9 @@
+import { AdoptionStatus } from "@/interfaces/adoptionInterface";
 import api from "@/lib/api";
 
 export interface AdoptionRequest {
+  id: string;
+  createdAt: string | number | Date;
   animalId: string;
   fullName: string;
   email: string;
@@ -12,6 +15,7 @@ export interface AdoptionRequest {
   workSchedule: string;
   reasonForAdoption: string;
   agreedToTerms: boolean;
+  status: AdoptionStatus;
 }
 
 export interface AdoptionResponse {
