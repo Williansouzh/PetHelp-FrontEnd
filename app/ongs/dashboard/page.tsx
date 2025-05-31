@@ -1,5 +1,10 @@
 "use client";
-import { Stats } from "@/interfaces/dashboardInterface";
+import {
+  PaginatedAdoptions,
+  PaginatedPets,
+  Pet,
+  Stats,
+} from "@/interfaces/dashboardInterface";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,81 +45,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import PlaceholderImage from "@/components/placeholder-image";
-import { getDashboardStats } from "@/services/dashboardService";
-
-const pets = [
-  {
-    id: 1,
-    name: "Max",
-    age: "2 anos",
-    breed: "Vira-lata",
-    status: "disponível",
-    image: "/placeholder.svg?height=100&width=100",
-    type: "dog",
-    createdAt: "2023-05-15",
-  },
-  {
-    id: 2,
-    name: "Luna",
-    age: "1 ano",
-    breed: "Siamês",
-    status: "adotado",
-    image: "/placeholder.svg?height=100&width=100",
-    type: "cat",
-    createdAt: "2023-06-20",
-  },
-  {
-    id: 3,
-    name: "Thor",
-    age: "3 anos",
-    breed: "Golden Retriever",
-    status: "em processo",
-    image: "/placeholder.svg?height=100&width=100",
-    type: "dog",
-    createdAt: "2023-07-10",
-  },
-  {
-    id: 4,
-    name: "Nina",
-    age: "6 meses",
-    breed: "Persa",
-    status: "disponível",
-    image: "/placeholder.svg?height=100&width=100",
-    type: "cat",
-    createdAt: "2023-08-05",
-  },
-];
+import { getAllPets, getDashboardStats } from "@/services/dashboardService";
+import { AnimalStatus } from "@/interfaces/animalInterface";
+import { calcularIdade } from "@/utils/dateUtils";
+import { getAllAdoptions } from "@/services/adoptionService";
+import { AdoptionStatus } from "@/interfaces/adoptionInterface";
 
 // Dados simulados de solicitações de adoção
-const adoptionRequests = [
-  {
-    id: 1,
-    petName: "Max",
-    petId: 1,
-    requesterName: "João Silva",
-    requesterEmail: "joao@example.com",
-    status: "pendente",
-    createdAt: "2023-08-10",
-  },
-  {
-    id: 2,
-    petName: "Luna",
-    petId: 2,
-    requesterName: "Maria Oliveira",
-    requesterEmail: "maria@example.com",
-    status: "aprovado",
-    createdAt: "2023-07-25",
-  },
-  {
-    id: 3,
-    petName: "Thor",
-    petId: 3,
-    requesterName: "Pedro Santos",
-    requesterEmail: "pedro@example.com",
-    status: "em análise",
-    createdAt: "2023-08-15",
-  },
-];
+// const adoptionRequests = [
+//   {
+//     id: 1,
+//     petName: "Max",
+//     petId: 1,
+//     requesterName: "João Silva",
+//     requesterEmail: "joao@example.com",
+//     status: "pendente",
+//     createdAt: "2023-08-10",
+//   },
+// ];
 
 // Dados simulados de estatísticas
 const buildStats = (stats: Stats | undefined) => {
@@ -150,12 +98,19 @@ const buildStats = (stats: Stats | undefined) => {
 
 export default function OngDashboardPage() {
   const [selectedTab, setSelectedTab] = useState("overview");
-  const [petsData, setPetsData] = useState(pets);
+  const [petsData, setPetsData] = useState<PaginatedPets>();
   const [dashboardStats, setDashboardStats] = useState<Stats>();
+  const [adoptionRequestsData, setAdoptionRequestsData] =
+    useState<PaginatedAdoptions | null>(null);
   useEffect(() => {
     const fetchStats = async () => {
       const stats = await getDashboardStats();
+      const pets = await getAllPets();
+      const adoptionRequests = await getAllAdoptions();
+      console.log("Pets:", pets);
+      setPetsData(pets);
       setDashboardStats(stats);
+      setAdoptionRequestsData(adoptionRequests);
     };
     fetchStats();
   }, []);
@@ -279,36 +234,39 @@ export default function OngDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {pets.slice(0, 4).map((pet) => (
-                  <Card key={pet.id} className="overflow-hidden">
-                    <div className="relative h-32">
-                      {pet.image ? (
-                        <Image
-                          src={pet.image || "/placeholder.svg"}
-                          alt={pet.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <PlaceholderImage
-                          width={100}
-                          height={100}
-                          alt={pet.name}
-                          className="w-full h-full"
-                        />
-                      )}
-                      {getStatusBadge(pet.status)}
-                    </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-bold">{pet.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {pet.breed} • {pet.age}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+                {petsData?.data &&
+                  petsData.data.slice(0, 4).map((pet) => (
+                    <Card key={pet.id} className="overflow-hidden">
+                      <div className="relative h-32">
+                        {pet.imageUrl ? (
+                          <Image
+                            src={pet.imageUrl || "/placeholder.svg"}
+                            alt={pet.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <PlaceholderImage
+                            width={100}
+                            height={100}
+                            alt={pet.name}
+                            className="w-full h-full"
+                          />
+                        )}
+                        {getStatusBadge(AnimalStatus[pet.status])}
+                      </div>
+                      <CardContent className="p-4">
+                        <h3 className="font-bold">{pet.name}</h3>
+                        <p className="text-sm text-gray-500">
+                          {pet.breed} •{" "}
+                          {new Date(pet.createdAt).toLocaleDateString()}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
               </div>
             </CardContent>
+
             <CardFooter className="flex justify-center">
               <Button variant="outline" onClick={() => setSelectedTab("pets")}>
                 Ver todos os pets
@@ -336,18 +294,20 @@ export default function OngDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {adoptionRequests.slice(0, 3).map((request) => (
+                  {adoptionRequestsData?.data.slice(0, 3).map((request) => (
                     <TableRow key={request.id}>
                       <TableCell className="font-medium">
-                        {request.petName}
+                        {request.fullName}
                       </TableCell>
-                      <TableCell>{request.requesterName}</TableCell>
+                      <TableCell>{request.email}</TableCell>
                       <TableCell>
                         {new Date(request.createdAt).toLocaleDateString(
                           "pt-BR"
                         )}
                       </TableCell>
-                      <TableCell>{getStatusBadge(request.status)}</TableCell>
+                      <TableCell>
+                        {getStatusBadge(AdoptionStatus[request.status])}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" asChild>
                           <Link
@@ -395,85 +355,88 @@ export default function OngDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pets.map((pet) => (
-                    <TableRow key={pet.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <div className="relative w-8 h-8 rounded-full overflow-hidden">
-                            {pet.image ? (
-                              <Image
-                                src={pet.image || "/placeholder.svg"}
-                                alt={pet.name}
-                                fill
-                                className="object-cover"
-                              />
-                            ) : (
-                              <PlaceholderImage
-                                width={32}
-                                height={32}
-                                alt={pet.name}
-                                className="w-full h-full"
-                              />
-                            )}
+                  {petsData &&
+                    petsData?.data?.map((pet) => (
+                      <TableRow key={pet.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                              {pet.imageUrl ? (
+                                <Image
+                                  src={pet.imageUrl || "/placeholder.svg"}
+                                  alt={pet.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <PlaceholderImage
+                                  width={32}
+                                  height={32}
+                                  alt={pet.name}
+                                  className="w-full h-full"
+                                />
+                              )}
+                            </div>
+                            {pet.name}
                           </div>
-                          {pet.name}
-                        </div>
-                      </TableCell>
-                      <TableCell>{pet.breed}</TableCell>
-                      <TableCell>{pet.age}</TableCell>
-                      <TableCell>{getStatusBadge(pet.status)}</TableCell>
-                      <TableCell>
-                        {new Date(pet.createdAt).toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <span className="sr-only">Abrir menu</span>
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4"
-                              >
-                                <circle cx="12" cy="12" r="1" />
-                                <circle cx="12" cy="5" r="1" />
-                                <circle cx="12" cy="19" r="1" />
-                              </svg>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/ongs/dashboard/pets/${pet.id}`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Ver detalhes
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/ongs/dashboard/pets/${pet.id}/editar`}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>{pet.breed}</TableCell>
+                        <TableCell>{calcularIdade(pet.birthDate)}</TableCell>
+                        <TableCell>
+                          {getStatusBadge(AnimalStatus[pet.status])}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(pet.createdAt).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <span className="sr-only">Abrir menu</span>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4"
+                                >
+                                  <circle cx="12" cy="12" r="1" />
+                                  <circle cx="12" cy="5" r="1" />
+                                  <circle cx="12" cy="19" r="1" />
+                                </svg>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/ongs/dashboard/pets/${pet.id}`}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Ver detalhes
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={`/ongs/dashboard/pets/${pet.id}/editar`}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Editar
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </CardContent>
@@ -506,67 +469,70 @@ export default function OngDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {adoptionRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">
-                        #{request.id}
-                      </TableCell>
-                      <TableCell>{request.petName}</TableCell>
-                      <TableCell>{request.requesterName}</TableCell>
-                      <TableCell>{request.requesterEmail}</TableCell>
-                      <TableCell>
-                        {new Date(request.createdAt).toLocaleDateString(
-                          "pt-BR"
-                        )}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(request.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <span className="sr-only">Abrir menu</span>
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4"
-                              >
-                                <circle cx="12" cy="12" r="1" />
-                                <circle cx="12" cy="5" r="1" />
-                                <circle cx="12" cy="19" r="1" />
-                              </svg>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/ongs/dashboard/solicitacoes/${request.id}`}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                Ver detalhes
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <CheckCircle2 className="mr-2 h-4 w-4" />
-                              Aprovar
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Recusar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {adoptionRequestsData &&
+                    adoptionRequestsData?.data.map((request) => (
+                      <TableRow key={request.id}>
+                        <TableCell className="font-medium">
+                          #{request.id}
+                        </TableCell>
+                        <TableCell>{/* aqui petName, se tiver */}</TableCell>
+                        <TableCell>{request.fullName}</TableCell>
+                        <TableCell>{request.email}</TableCell>
+                        <TableCell>
+                          {new Date(request.createdAt).toLocaleDateString(
+                            "pt-BR"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(AdoptionStatus[request.status])}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <span className="sr-only">Abrir menu</span>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4"
+                                >
+                                  <circle cx="12" cy="12" r="1" />
+                                  <circle cx="12" cy="5" r="1" />
+                                  <circle cx="12" cy="19" r="1" />
+                                </svg>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={`/ongs/dashboard/solicitacoes/${request.id}`}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Ver detalhes
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Aprovar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Recusar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </CardContent>
