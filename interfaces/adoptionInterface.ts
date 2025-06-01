@@ -1,5 +1,5 @@
 export enum AdoptionStatus {
-  Disponivel = 0,
-  EmAdocao = 1,
-  Adotado = 2,
+  Pendente = 0,
+  Aprovado = 1,
+  Rejeitado = 2,
 }

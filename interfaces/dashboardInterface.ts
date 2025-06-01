@@ -1,3 +1,5 @@
+import { AnimalStatus } from "./animalInterface";
+
 export interface Stats {
   totalPets: number;
   adoptedPets: number;
@@ -7,9 +9,9 @@ export interface Stats {
 export interface Pet {
   id: string;
   name: string;
-  birthDate: string;
+  birthDate: Date;
   breed: string;
-  status: number;
+  status: AnimalStatus;
   imageUrl: string;
   createdAt: string;
 }

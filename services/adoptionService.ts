@@ -1,4 +1,5 @@
 import { AdoptionStatus } from "@/interfaces/adoptionInterface";
+import { PaginatedAdoptions } from "@/interfaces/dashboardInterface";
 import api from "@/lib/api";
 
 export interface AdoptionRequest {
@@ -17,7 +18,9 @@ export interface AdoptionRequest {
   agreedToTerms: boolean;
   status: AdoptionStatus;
 }
-
+export interface AdoptionUpdateStatus {
+  status: AdoptionStatus;
+}
 export interface AdoptionResponse {
   id: string;
   userId: string;
@@ -49,13 +52,21 @@ export async function updateAdoption(id: string, data: AdoptionRequest) {
   const response = await api.put<AdoptionResponse>(`/adoptions/${id}`, data);
   return response.data;
 }
-
+export async function updateAdoptionStatus(id: string, status: AdoptionStatus) {
+  const response = await api.patch<AdoptionResponse>(
+    `/adoptions/${id}/status`,
+    {
+      status,
+    }
+  );
+  return response.data;
+}
 export async function deleteAdoption(id: string) {
   await api.delete(`/adoptions/${id}`);
 }
 
 export async function getAllAdoptions(pageNumber = 1, pageSize = 10) {
-  const response = await api.get<AdoptionResponse[]>(`/adoptions`, {
+  const response = await api.get<PaginatedAdoptions>(`/adoptions`, {
     params: { pageNumber, pageSize },
   });
   return response.data;

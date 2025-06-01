@@ -48,23 +48,14 @@ import PlaceholderImage from "@/components/placeholder-image";
 import { getAllPets, getDashboardStats } from "@/services/dashboardService";
 import { AnimalStatus } from "@/interfaces/animalInterface";
 import { calcularIdade } from "@/utils/dateUtils";
-import { getAllAdoptions } from "@/services/adoptionService";
+import {
+  getAllAdoptions,
+  updateAdoption,
+  updateAdoptionStatus,
+} from "@/services/adoptionService";
 import { AdoptionStatus } from "@/interfaces/adoptionInterface";
+import { getAnimalById } from "@/services/animalService";
 
-// Dados simulados de solicitações de adoção
-// const adoptionRequests = [
-//   {
-//     id: 1,
-//     petName: "Max",
-//     petId: 1,
-//     requesterName: "João Silva",
-//     requesterEmail: "joao@example.com",
-//     status: "pendente",
-//     createdAt: "2023-08-10",
-//   },
-// ];
-
-// Dados simulados de estatísticas
 const buildStats = (stats: Stats | undefined) => {
   if (!stats) return [];
 
@@ -107,73 +98,59 @@ export default function OngDashboardPage() {
       const stats = await getDashboardStats();
       const pets = await getAllPets();
       const adoptionRequests = await getAllAdoptions();
-      console.log("Pets:", pets);
       setPetsData(pets);
       setDashboardStats(stats);
       setAdoptionRequestsData(adoptionRequests);
+
+      console.log("Pets Data:", petsData);
     };
+    petsData?.data?.map((pet) => {
+      console.log("Pet ID:", pet);
+    });
     fetchStats();
   }, []);
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "disponível":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 hover:bg-green-50"
-          >
-            Disponível
-          </Badge>
-        );
-      case "adotado":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-blue-50 text-blue-700 hover:bg-blue-50"
-          >
-            Adotado
-          </Badge>
-        );
-      case "em processo":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
-          >
-            Em processo
-          </Badge>
-        );
-      case "pendente":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
-          >
-            Pendente
-          </Badge>
-        );
-      case "aprovado":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 hover:bg-green-50"
-          >
-            Aprovado
-          </Badge>
-        );
-      case "em análise":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-blue-50 text-blue-700 hover:bg-blue-50"
-          >
-            Em análise
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+  const statusMap: Record<
+    AnimalStatus,
+    { label: string; bg: string; text: string }
+  > = {
+    [AnimalStatus.Disponivel]: {
+      label: "Disponível",
+      bg: "bg-green-50",
+      text: "text-green-700",
+    },
+    [AnimalStatus.EmAdocao]: {
+      label: "Em processo",
+      bg: "bg-yellow-50",
+      text: "text-yellow-700",
+    },
+    [AnimalStatus.Adotado]: {
+      label: "Adotado",
+      bg: "bg-blue-50",
+      text: "text-blue-700",
+    },
   };
+  const getStatusBadge = (status: AnimalStatus) => {
+    const info = statusMap[status];
+    //console.log("getStatusBadge", status, info);
+    if (!info) return <Badge variant="outline">Desconhecido</Badge>;
+
+    return (
+      <Badge
+        variant="outline"
+        className={`${info.bg} ${info.text} hover:${info.bg}`}
+      >
+        {info.label}
+      </Badge>
+    );
+  };
+
+  async function handleApprove(id: string) {
+    await updateAdoptionStatus(id, AdoptionStatus.Aprovado);
+  }
+
+  async function handleReject(id: string) {
+    await updateAdoptionStatus(id, AdoptionStatus.Rejeitado);
+  }
 
   return (
     <div className="container py-8">
@@ -253,7 +230,7 @@ export default function OngDashboardPage() {
                             className="w-full h-full"
                           />
                         )}
-                        {getStatusBadge(AnimalStatus[pet.status])}
+                        {getStatusBadge(pet.status)}
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-bold">{pet.name}</h3>
@@ -294,32 +271,31 @@ export default function OngDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {adoptionRequestsData?.data.slice(0, 3).map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">
-                        {request.fullName}
-                      </TableCell>
-                      <TableCell>{request.email}</TableCell>
-                      <TableCell>
-                        {new Date(request.createdAt).toLocaleDateString(
-                          "pt-BR"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(AdoptionStatus[request.status])}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link
-                            href={`/ongs/dashboard/solicitacoes/${request.id}`}
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">Ver detalhes</span>
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {adoptionRequestsData &&
+                    adoptionRequestsData?.data.slice(0, 3).map((request) => (
+                      <TableRow key={request.id}>
+                        <TableCell className="font-medium">
+                          {request.name}
+                        </TableCell>
+                        <TableCell>{request.breed}</TableCell>
+                        <TableCell>
+                          {new Date(request.createdAt).toLocaleDateString(
+                            "pt-BR"
+                          )}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(request.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link
+                              href={`/ongs/dashboard/solicitacoes/${request.id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">Ver detalhes</span>
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </CardContent>
@@ -382,11 +358,14 @@ export default function OngDashboardPage() {
                         </TableCell>
                         <TableCell>{pet.breed}</TableCell>
                         <TableCell>{calcularIdade(pet.birthDate)}</TableCell>
+                        <TableCell>{getStatusBadge(pet.status)}</TableCell>
                         <TableCell>
-                          {getStatusBadge(AnimalStatus[pet.status])}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(pet.createdAt).toLocaleDateString("pt-BR")}
+                          {pet.createdAt &&
+                          pet.createdAt !== "0001-01-01T00:00:00"
+                            ? new Date(pet.createdAt).toLocaleDateString(
+                                "pt-BR"
+                              )
+                            : "Data indisponível"}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -483,9 +462,7 @@ export default function OngDashboardPage() {
                             "pt-BR"
                           )}
                         </TableCell>
-                        <TableCell>
-                          {getStatusBadge(AdoptionStatus[request.status])}
-                        </TableCell>
+                        <TableCell>{getStatusBadge(request.status)}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -519,12 +496,21 @@ export default function OngDashboardPage() {
                                   Ver detalhes
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  handleApprove(request.id);
+                                }}
+                              >
                                 <CheckCircle2 className="mr-2 h-4 w-4" />
                                 Aprovar
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  handleReject(request.id);
+                                }}
+                                className="text-red-600"
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Recusar
                               </DropdownMenuItem>
