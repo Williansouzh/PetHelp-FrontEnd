@@ -70,6 +70,6 @@ export enum Size {
 
 export enum AnimalStatus {
   Disponivel = 0,
-  EmAdocao = 1,
-  Adotado = 2,
+  Adotado = 1,
+  EmAdocao = 2,
 }

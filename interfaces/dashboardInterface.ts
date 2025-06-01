@@ -28,6 +28,8 @@ export interface PaginatedPets {
 export interface Adoption {
   id: string;
   userId: string;
+  animalId: string;
+  animalName: string;
   fullName: string;
   email: string;
   phone: string;

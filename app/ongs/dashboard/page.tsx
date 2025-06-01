@@ -109,30 +109,45 @@ export default function OngDashboardPage() {
     });
     fetchStats();
   }, []);
-  const statusMap: Record<
-    AnimalStatus,
-    { label: string; bg: string; text: string }
-  > = {
+  const statusMap = {
     [AnimalStatus.Disponivel]: {
       label: "Disponível",
-      bg: "bg-green-50",
-      text: "text-green-700",
-    },
-    [AnimalStatus.EmAdocao]: {
-      label: "Em processo",
-      bg: "bg-yellow-50",
-      text: "text-yellow-700",
+      bg: "bg-green-100",
+      text: "text-green-800",
     },
     [AnimalStatus.Adotado]: {
       label: "Adotado",
-      bg: "bg-blue-50",
-      text: "text-blue-700",
+      bg: "bg-gray-100",
+      text: "text-gray-800",
+    },
+    [AnimalStatus.EmAdocao]: {
+      label: "Em processo de adoção",
+      bg: "bg-yellow-100",
+      text: "text-yellow-800",
     },
   };
-  const getStatusBadge = (status: AnimalStatus) => {
-    const info = statusMap[status];
-    //console.log("getStatusBadge", status, info);
-    if (!info) return <Badge variant="outline">Desconhecido</Badge>;
+
+  const getStatusBadge = (status: AnimalStatus | string) => {
+    const normalizedStatus =
+      typeof status === "string" ? status.toLowerCase() : status;
+
+    const stringToEnum: Record<string, AnimalStatus> = {
+      disponivel: AnimalStatus.Disponivel,
+      adotado: AnimalStatus.Adotado,
+      emprocessodeadocao: AnimalStatus.EmAdocao,
+    };
+
+    const finalStatus =
+      typeof normalizedStatus === "string"
+        ? stringToEnum[normalizedStatus.replace(/\s/g, "").toLowerCase()]
+        : normalizedStatus;
+
+    const info = statusMap[finalStatus as AnimalStatus];
+
+    if (!info) {
+      console.warn("⚠️ Status inválido recebido:", status);
+      return <Badge variant="outline">Desconhecido</Badge>;
+    }
 
     return (
       <Badge
@@ -275,9 +290,9 @@ export default function OngDashboardPage() {
                     adoptionRequestsData?.data.slice(0, 3).map((request) => (
                       <TableRow key={request.id}>
                         <TableCell className="font-medium">
-                          {request.name}
+                          {request.animalName || "Desconhecido"}
                         </TableCell>
-                        <TableCell>{request.breed}</TableCell>
+                        <TableCell>{request.fullName}</TableCell>
                         <TableCell>
                           {new Date(request.createdAt).toLocaleDateString(
                             "pt-BR"
