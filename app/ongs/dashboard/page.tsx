@@ -121,8 +121,8 @@ export default function OngDashboardPage() {
       text: "text-gray-800",
     },
     [AnimalStatus.EmAdocao]: {
-      label: "Em processo de adoção",
-      bg: "bg-yellow-100",
+      label: "Rejeitado",
+      bg: "bg-red-100",
       text: "text-yellow-800",
     },
   };
@@ -161,10 +161,14 @@ export default function OngDashboardPage() {
 
   async function handleApprove(id: string) {
     await updateAdoptionStatus(id, AdoptionStatus.Aprovado);
+    const updatedAdoptions = await getAllAdoptions();
+    setAdoptionRequestsData(updatedAdoptions);
   }
 
   async function handleReject(id: string) {
     await updateAdoptionStatus(id, AdoptionStatus.Rejeitado);
+    const updatedAdoptions = await getAllAdoptions();
+    setAdoptionRequestsData(updatedAdoptions);
   }
 
   return (
@@ -469,7 +473,7 @@ export default function OngDashboardPage() {
                         <TableCell className="font-medium">
                           #{request.id}
                         </TableCell>
-                        <TableCell>{/* aqui petName, se tiver */}</TableCell>
+                        <TableCell>{request.animalName}</TableCell>
                         <TableCell>{request.fullName}</TableCell>
                         <TableCell>{request.email}</TableCell>
                         <TableCell>
