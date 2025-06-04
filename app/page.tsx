@@ -152,10 +152,11 @@ export default function Home() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex justify-center">
-                  <PlaceholderImage
+                  <Image
+                    src="/people/pessoa1.jpg"
                     width={100}
                     height={100}
-                    alt="Foto de perfil"
+                    alt="pessoa 1"
                     className="rounded-full"
                   />
                 </div>
@@ -172,10 +173,11 @@ export default function Home() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex justify-center">
-                  <PlaceholderImage
+                  <Image
+                    src="/people/pessoa2.jpg"
                     width={100}
                     height={100}
-                    alt="Foto de perfil"
+                    alt="pessoa 1"
                     className="rounded-full"
                   />
                 </div>
@@ -192,10 +194,11 @@ export default function Home() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex justify-center">
-                  <PlaceholderImage
+                  <Image
+                    src="/people/pessoa3.png"
                     width={100}
                     height={100}
-                    alt="Foto de perfil"
+                    alt="pessoa 1"
                     className="rounded-full"
                   />
                 </div>

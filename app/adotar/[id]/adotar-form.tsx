@@ -86,7 +86,7 @@ export default function AdotarForm({
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
 
-    const adoptionData: AdoptionRequest = {
+    const adoptionData = {
       animalId: petId,
       fullName: values.name,
       email: values.email,

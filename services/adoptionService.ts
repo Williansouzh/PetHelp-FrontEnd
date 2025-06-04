@@ -36,6 +36,8 @@ export interface AdoptionResponse {
   reasonForAdoption: string;
   agreedToTerms: boolean;
   createdAt: string;
+  status: AdoptionStatus;
+  animalImageUrl?: string; // Optional field for the animal's image URL
 }
 
 export async function createAdoption(data: AdoptionRequest) {
@@ -44,7 +46,9 @@ export async function createAdoption(data: AdoptionRequest) {
 }
 
 export async function getAdoptionById(id: string) {
-  const response = await api.get<AdoptionResponse>(`/adoptions/${id}`);
+  const response = await api.get<
+    AdoptionResponse & { animalImageUrl?: string }
+  >(`/adoptions/${id}?includeAnimal=true`);
   return response.data;
 }
 
